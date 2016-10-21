@@ -191,10 +191,10 @@ begin
         for J := 0 to LengthArray - 1 do
           // Создание нового файла, либо происходит запись в конец существующего файла
           // Без указания кодировки не работает
-          TFile.AppendAllText(SavePath, FinishArrayFiles[J] + SLineBreak, TEncoding.UTF8)
+          TFile.AppendAllText(SavePath, FinishArrayFiles[J] + SLineBreak, TEncoding.ANSI)
       else
         // Создание нового файла, либо происходит перезапись существующего файла
-        TFile.WriteAllLines(SavePath, FinishArrayFiles);
+        TFile.WriteAllLines(SavePath, FinishArrayFiles, TEncoding.ANSI);
 
     FinishArrayFiles := nil;
 
