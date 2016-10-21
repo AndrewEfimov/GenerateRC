@@ -177,7 +177,7 @@ begin
         TemplateName := 'file_';
 
       for I := 0 to FFiles.Count - 1 do
-        FinishArrayFiles[I] := Format('%s%d %s "%s"', [TemplateName, I, TypeResource, FFiles[I]]);
+        FinishArrayFiles[I] := Format('%s%d %s "%s"', [TemplateName, I+1, TypeResource, FFiles[I]]);
     end
     else
       for I := 0 to FFiles.Count - 1 do
