@@ -382,7 +382,6 @@ begin
             AniIndicator1.Enabled := False;
             layAni.Visible := False;
 
-            //AddLog('Файлов найдено: ' + FFiles.Count.ToString);
             AddLog('Файлов найдено: ' + Length(FFiles).ToString);
 
             OnOffbCreateFile;
