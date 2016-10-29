@@ -13,7 +13,7 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.ListBox, FMX.StdCtrls,
   FMX.ScrollBox, FMX.Memo, FMX.Edit, FMX.Layouts, FMX.Controls.Presentation,
-  FMX.Dialogs, FMX.Objects, FMX.Ani, FMX.DialogService.Sync, System.IOUtils, Winapi.ShellAPI;
+  FMX.Dialogs, FMX.Objects, FMX.Ani, FMX.DialogService.Sync, System.IOUtils, Winapi.ShellAPI, System.Generics.Collections;
 
 type
   TFormMain = class(TForm)
@@ -79,7 +79,7 @@ type
     procedure Label6Click(Sender: TObject);
   private
     { Private declarations }
-    FFiles: TStringList;
+    FFiles: TStringDynArray;
     FScanningProcess: Boolean;
     procedure ScanFolder(PathFolder: string);
     procedure OnOffbCreateFile;
@@ -96,9 +96,6 @@ implementation
 
 {$R *.fmx}
 
-{ TODO :
-  Вынести Format в константу
-  Запилить проверку результата для cmd}
 procedure TFormMain.AddLog(value: string);
 begin
   mLogs.Lines.Add(Format('%s: %s', [TimeToStr(Now), value]));
@@ -139,7 +136,6 @@ procedure TFormMain.ProcessCreateFile;
 var
   I, J: Integer;
   TemplateName: string;
-  LengthArray: Integer;
   FinishArrayFiles: TStringDynArray;
   SavePath, TypeResource: string;
   NameAuto, AddToTheOldFile: Boolean;
@@ -167,28 +163,26 @@ begin
       end);
 
     // Обрабатываем исходный массив с данными
-    FinishArrayFiles := nil;
-
-    SetLength(FinishArrayFiles, FFiles.Count);
+    SetLength(FinishArrayFiles, Length(FFiles));
 
     if NameAuto then
     begin
       if TemplateName.IsEmpty then
         TemplateName := 'file_';
 
-      for I := 0 to FFiles.Count - 1 do
+      for I := 0 to Length(FFiles) - 1 do
         FinishArrayFiles[I] := Format('%s%d %s "%s"', [TemplateName, I+1, TypeResource, FFiles[I]]);
     end
     else
-      for I := 0 to FFiles.Count - 1 do
+      for I := 0 to Length(FFiles) - 1 do
         FinishArrayFiles[I] := Format('%s %s "%s"', [TPath.GetFileNameWithoutExtension(FFiles[I]), TypeResource,
           FFiles[I]]);
 
-    LengthArray := Length(FinishArrayFiles);
+    TArray.Sort<string>(FinishArrayFiles);
 
-    if LengthArray > 0 then
+    if Length(FinishArrayFiles) > 0 then
       if AddToTheOldFile AND TFile.Exists(SavePath) then
-        for J := 0 to LengthArray - 1 do
+        for J := 0 to Length(FinishArrayFiles) - 1 do
           // Создание нового файла, либо происходит запись в конец существующего файла
           // Без указания кодировки не работает
           TFile.AppendAllText(SavePath, FinishArrayFiles[J] + SLineBreak, TEncoding.ANSI)
@@ -227,14 +221,13 @@ procedure TFormMain.FormCreate(Sender: TObject);
 begin
   ChangeFolderAndFile(Self);
 
-  FFiles := TStringList.Create;
-
   OnOffbCreateFile;
 end;
 
 procedure TFormMain.FormDestroy(Sender: TObject);
 begin
-  FFiles.Free;
+  //SetLength(FFiles, 0);
+  FFiles := nil;
 end;
 
 procedure TFormMain.Label6Click(Sender: TObject);
@@ -284,8 +277,7 @@ var
   I: Integer;
   PathFiles: string;
 begin
-
-  FFiles.Clear;
+  SetLength(FFiles, 0);
 
   if OpenDialog1.Execute then
   begin
@@ -295,10 +287,9 @@ begin
     mLogs.Lines.Clear;
     AddLog('Режим ручного выбора');
 
-    FFiles.AddStrings(OpenDialog1.Files);
-    FFiles.Sort;
+    FFiles := TStringDynArray(OpenDialog1.Files.ToStringArray);
 
-    AddLog('Файлов выбрано: ' + FFiles.Count.ToString);
+    AddLog('Файлов выбрано: ' + Length(FFiles).ToString);
 
     for I := 0 to OpenDialog1.Files.Count - 1 do
       if PathFiles.Length > 1 then
@@ -318,8 +309,7 @@ procedure TFormMain.sbSelectFolderClick(Sender: TObject);
 var
   PathFolder: string;
 begin
-
-  FFiles.Clear;
+  SetLength(FFiles, 0);
 
   // ExtractFilePath(ParamStr(0));
   if SelectDirectory('Выберите папку...', '', PathFolder) then
@@ -340,7 +330,6 @@ end;
 
 procedure TFormMain.ScanFolder(PathFolder: string);
 var
-  Files: TStringDynArray;
   FThread: TThread;
 begin
 
@@ -369,7 +358,7 @@ begin
               AddLog('Сканирование включая подкаталоги...');
             end);
 
-          Files := TDirectory.GetFiles(PathFolder, TSearchOption.soAllDirectories, FilterPredicate);
+          FFiles := TDirectory.GetFiles(PathFolder, TSearchOption.soAllDirectories, FilterPredicate);
         end
         else
         begin
@@ -378,15 +367,11 @@ begin
             begin
               AddLog('Сканирование без подкаталогов...');
             end);
-          Files := TDirectory.GetFiles(PathFolder, TSearchOption.soTopDirectoryOnly, FilterPredicate);
+
+          FFiles := TDirectory.GetFiles(PathFolder, TSearchOption.soTopDirectoryOnly, FilterPredicate);
         end;
 
-        FFiles.Clear;
-        FFiles.AddStrings(TArray<string>(Files));
-        FFiles.Sort;
-
         FScanningProcess := False;
-
       finally
         TThread.Synchronize(nil,
           procedure
@@ -397,7 +382,8 @@ begin
             AniIndicator1.Enabled := False;
             layAni.Visible := False;
 
-            AddLog('Файлов найдено: ' + FFiles.Count.ToString);
+            //AddLog('Файлов найдено: ' + FFiles.Count.ToString);
+            AddLog('Файлов найдено: ' + Length(FFiles).ToString);
 
             OnOffbCreateFile;
           end);

@@ -3632,7 +3632,7 @@ object FormMain: TFormMain
     Size.PlatformDefault = False
     TextSettings.WordWrap = False
     TextSettings.Trimming = None
-    Text = #1042#1077#1088#1089#1080#1103' 1.5.2 (10.2016) '
+    Text = #1042#1077#1088#1089#1080#1103' 1.5.3 (10.2016) '
     OnClick = Label6Click
   end
 end
