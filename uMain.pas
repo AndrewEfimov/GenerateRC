@@ -226,7 +226,6 @@ end;
 
 procedure TFormMain.FormDestroy(Sender: TObject);
 begin
-  //SetLength(FFiles, 0);
   FFiles := nil;
 end;
 
@@ -245,7 +244,6 @@ end;
 
 procedure TFormMain.sbSaveFileClick(Sender: TObject);
 begin
-
   if SaveDialog1.Execute then
   begin
     if FileExists(SaveDialog1.FileName) then
@@ -277,7 +275,7 @@ var
   I: Integer;
   PathFiles: string;
 begin
-  SetLength(FFiles, 0);
+  FFiles := nil;
 
   if OpenDialog1.Execute then
   begin
@@ -309,7 +307,7 @@ procedure TFormMain.sbSelectFolderClick(Sender: TObject);
 var
   PathFolder: string;
 begin
-  SetLength(FFiles, 0);
+  FFiles := nil;
 
   // ExtractFilePath(ParamStr(0));
   if SelectDirectory('Выберите папку...', '', PathFolder) then
