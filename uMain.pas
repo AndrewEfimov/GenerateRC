@@ -275,8 +275,6 @@ var
   I: Integer;
   PathFiles: string;
 begin
-  FFiles := nil;
-
   if OpenDialog1.Execute then
   begin
     PathFiles := '';
@@ -307,8 +305,6 @@ procedure TFormMain.sbSelectFolderClick(Sender: TObject);
 var
   PathFolder: string;
 begin
-  FFiles := nil;
-
   // ExtractFilePath(ParamStr(0));
   if SelectDirectory('Выберите папку...', '', PathFolder) then
   begin
