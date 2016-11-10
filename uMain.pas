@@ -2,6 +2,7 @@
   *
   * Autor: Efimov A.A.
   * E-mail: infocean@gmail.com
+  * GitHub: https://github.com/AndrewEfimov
   *
   ******************************************************************** }
 
