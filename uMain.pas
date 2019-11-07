@@ -85,7 +85,7 @@ type
   private
     { Private declarations }
     FFileList: TArray<string>;
-    procedure AddLog(const AValue: string; const AClearLog: Boolean = False);
+    procedure AddLog(const AMessage: string; const AClearLog: Boolean = False);
     procedure ScanDirectoryProcess(const ADirPath: string; const ASearchInSubDirs: Boolean = False);
     function SelectedFilesToStr(const AFiles: TArray<string>): string;
     procedure DataProcessing;
@@ -93,6 +93,20 @@ type
   public
     { Public declarations }
   end;
+
+resourcestring
+  InfoProcessStart = 'Началась обработка данных...';
+  InfoProcessFinish = 'Обработка данных завершена.';
+  ErrorMessage = 'Возникла ошибка: %s';
+  MessageForDialog = 'Такой файл существует. Добавить записи в него?';
+  TitleSelectDirectory = 'Выберите папку...';
+  InfoSelectDir = 'Режим автоматического выбора файлов';
+  InfoSelectFile = 'Режим ручного выбора файлов';
+  InfoNumberOfFiles = 'Файлов выбрано: %d';
+  InfoLengthFileList = 'Выберите файлы';
+  InfoPathToOutputFile = 'Укажите файл для сохранения';
+  InfoAllDirectories = 'Сканирование включая подкаталоги...';
+  InfoTopDirectoryOnly = 'Сканирование без подкаталогов...';
 
 var
   FormMain: TFormMain;
@@ -104,7 +118,7 @@ implementation
 uses
   System.IOUtils, FMX.DialogService.Sync, Winapi.ShellAPI;
 
-procedure TFormMain.AddLog(const AValue: string; const AClearLog: Boolean);
+procedure TFormMain.AddLog(const AMessage: string; const AClearLog: Boolean);
 const
   FormatStr = '%s: %s';
 begin
@@ -115,7 +129,7 @@ begin
     mLogs.ContentBounds := TRectF.Empty;
   end;
 
-  mLogs.Lines.Add(Format(FormatStr, [TimeToStr(Now), AValue]));
+  mLogs.Lines.Add(Format(FormatStr, [TimeToStr(Now), AMessage]));
   mLogs.ScrollTo(0, mLogs.ContentBounds.Height);
 end;
 
@@ -136,9 +150,6 @@ const
   StrName = '%s %s "%s"';
   BatFileName = 'CreateResFile.bat';
   StrForBatFile = 'brcc32.exe %s%spause';
-  InfoProcessStart = 'Началась обработка данных...';
-  InfoProcessFinish = 'Обработка данных завершена.';
-  ErrorMessage = 'Возникла ошибка: %s';
 var
   PathToOutputFile, MaskForNames, TypeResource: string;
   AutoNames, AddToExistingFile: Boolean;
@@ -215,8 +226,6 @@ begin
 end;
 
 procedure TFormMain.sbSaveFileClick(Sender: TObject);
-const
-  MessageForDialog = 'Такой файл существует. Добавить записи в него?';
 begin
   if SaveDialog1.Execute then
   begin
@@ -235,9 +244,6 @@ begin
 end;
 
 procedure TFormMain.sbSelectDirClick(Sender: TObject);
-const
-  TitleSelectDirectory = 'Выберите папку...';
-  InfoSelectFile = 'Режим автоматического выбора файлов';
 var
   DirPath: string;
 begin
@@ -245,16 +251,13 @@ begin
   if SelectDirectory(TitleSelectDirectory, '', DirPath) then
   begin
     ShadowEffect1.Enabled := False;
-    AddLog(InfoSelectFile, True);
+    AddLog(InfoSelectDir, True);
     edDirPath.Text := DirPath;
     ScanDirectoryProcess(DirPath, cbScanSubDirs.IsChecked);
   end;
 end;
 
 procedure TFormMain.sbSelectFilesClick(Sender: TObject);
-const
-  InfoSelectFile = 'Режим ручного выбора файлов';
-  InfoNumberOfFiles = 'Файлов выбрано: %d';
 begin
   if OpenDialog1.Execute then
   begin
@@ -270,9 +273,6 @@ begin
 end;
 
 procedure TFormMain.sbStartProcessClick(Sender: TObject);
-const
-  InfoLengthFileList = 'Выберите файлы';
-  InfoPathToOutputFile = 'Укажите файл для сохранения';
 begin
   ShadowEffect1.Enabled := False;
   if not(Length(FFileList) > 0) then
@@ -298,10 +298,6 @@ end;
 procedure TFormMain.ScanDirectoryProcess(const ADirPath: string; const ASearchInSubDirs: Boolean);
 const
   MaskForFileNames = '*';
-  InfoAllDirectories = 'Сканирование включая подкаталоги...';
-  InfoTopDirectoryOnly = 'Сканирование без подкаталогов...';
-  InfoNumberOfFiles = 'Файлов найдено: %d';
-  ErrorMessage = 'Возникла ошибка: %s';
 var
   SearchOption: TSearchOption;
 begin
@@ -338,13 +334,13 @@ begin
   begin
     FileName := TPath.GetFileName(AFiles[I]);
 
-    if not SelectedFilesStr.IsEmpty then
-      SelectedFilesStr := Format(FormatStr, [SelectedFilesStr, FileName])
+    if SelectedFilesStr.IsEmpty then
+      SelectedFilesStr := FileName
     else
-      SelectedFilesStr := FileName;
-  end;
+      SelectedFilesStr := Format(FormatStr, [SelectedFilesStr, FileName]);
 
-  Result := SelectedFilesStr;
+    Result := SelectedFilesStr;
+  end;
 end;
 
 end.
