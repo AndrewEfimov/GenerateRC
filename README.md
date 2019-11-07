@@ -2,9 +2,11 @@
 
 Приложение для создания файла ресурсов (.RC; .RES)
 
-Version: 1.5.3 (20.10.16)
+Version: 2.0.0 (07.11.19) (Delphi 10.3.1)
+В блоге: [Приложение для создания файла ресурсов (.RC; .RES)](http://delphifmandroid.blogspot.com/2014/08/rc-res.html)
 
-![alt text](https://3.bp.blogspot.com/-rug_CgE4r7k/WAis-Jkq3yI/AAAAAAAABXU/VyuH4hy26QIn0F2BPG5aR1rIKR5YnKH3ACLcB/s1600/%25D0%25A1%25D0%25BD%25D0%25B8%25D0%25BC%25D0%25BE%25D0%25BA.PNG)
+![alt text](https://1.bp.blogspot.com/-QKwDMsGHcaE/XcQG9RfWvnI/AAAAAAAABlk/TRteEpUYgHo-BhbAZXvJDhqsgkqCFwYJACLcBGAsYHQ/s1600/Screen.png)
 
 
-Delphi 10.1 Berlin Update 1
+History:
+ - Version: 1.5.3 (20.10.16) Delphi 10.1 Berlin Update 1

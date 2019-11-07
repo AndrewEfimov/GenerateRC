@@ -1,52 +1,60 @@
-{ *********************************************************************
+п»ї{ *********************************************************************
   *
   * Autor: Efimov A.A.
   * E-mail: infocean@gmail.com
   * GitHub: https://github.com/AndrewEfimov
+  * Change: 07.11.2019
   *
   ******************************************************************** }
-
 unit uMain;
 
 interface
 
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
-  FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.ListBox, FMX.StdCtrls,
-  FMX.ScrollBox, FMX.Memo, FMX.Edit, FMX.Layouts, FMX.Controls.Presentation,
-  FMX.Dialogs, FMX.Objects, FMX.Ani, FMX.DialogService.Sync, System.IOUtils, Winapi.ShellAPI, System.Generics.Collections;
+  FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Layouts, FMX.Controls.Presentation, FMX.StdCtrls,
+  FMX.Edit, FMX.ListBox, FMX.ScrollBox, FMX.Memo, FMX.Effects;
 
 type
   TFormMain = class(TForm)
+    gbSource: TGroupBox;
+    layMain: TLayout;
+    gbOutput: TGroupBox;
+    layOptions: TLayout;
+    gbFinalNames: TGroupBox;
+    gbSettings: TGroupBox;
     StyleBook1: TStyleBook;
-    ePathFolder: TEdit;
-    ePathFiles: TEdit;
-    Layout1: TLayout;
-    laySelectFolder: TLayout;
+    Layout5: TLayout;
+    laySaveFile: TLayout;
+    sbSaveFile: TSpeedButton;
+    edPathToOutputFile: TEdit;
+    cbAddToExistingFile: TCheckBox;
+    Label1: TLabel;
+    Layout2: TLayout;
+    rbSelectDir: TRadioButton;
+    laySelectDir: TLayout;
+    edDirPath: TEdit;
+    sbSelectDir: TSpeedButton;
+    cbScanSubDirs: TCheckBox;
     Layout3: TLayout;
-    SaveDialog1: TSaveDialog;
-    sbSelectFolder: TSpeedButton;
-    sbSelectFiles: TSpeedButton;
-    cbScanSubFolders: TCheckBox;
-    rbSelectFolder: TRadioButton;
     rbSelectFiles: TRadioButton;
     laySelectFiles: TLayout;
-    Layout5: TLayout;
-    Layout6: TLayout;
-    sbSaveFile: TSpeedButton;
-    ePathSaveFile: TEdit;
-    Label1: TLabel;
-    gpFilesName: TGroupBox;
-    rbChangeNameSave: TRadioButton;
-    rbChangeNameAuto: TRadioButton;
-    eTemplateName: TEdit;
-    Label2: TLabel;
-    layChangeName: TLayout;
-    Label3: TLabel;
-    gbSettings: TGroupBox;
+    sbSelectFiles: TSpeedButton;
+    edFilePaths: TEdit;
+    Layout4: TLayout;
+    Layout7: TLayout;
     Layout8: TLayout;
+    Layout6: TLayout;
+    rbSaveNames: TRadioButton;
+    rbAutoNames: TRadioButton;
+    layNameMask: TLayout;
+    Label2: TLabel;
+    edMaskForNames: TEdit;
+    Label3: TLabel;
+    Layout9: TLayout;
+    Layout10: TLayout;
     Label4: TLabel;
-    combTypeResource: TComboBox;
+    cboxTypeResource: TComboBox;
     lbiIcon: TListBoxItem;
     lbiBitmap: TListBoxItem;
     lbiCursor: TListBoxItem;
@@ -54,38 +62,34 @@ type
     lbiFont: TListBoxItem;
     cbCreateBatFile: TCheckBox;
     cbCreateResFile: TCheckBox;
-    Layout9: TLayout;
-    cbAddToTheOldFile: TCheckBox;
-    gbSourceFiles: TGroupBox;
-    gbReadyFile: TGroupBox;
-    OpenDialog1: TOpenDialog;
-    mLogs: TMemo;
-    bCreateFile: TButton;
-    laySettings: TLayout;
-    AniIndicator1: TAniIndicator;
-    Layout11: TLayout;
-    layAni: TLayout;
     Label5: TLabel;
-    FloatAnimation1: TFloatAnimation;
-    Label6: TLabel;
-    procedure FormCreate(Sender: TObject);
-    procedure ChangeFolderAndFile(Sender: TObject);
-    procedure ChangeTypeName(Sender: TObject);
-    procedure sbSelectFolderClick(Sender: TObject);
+    layProcess: TLayout;
+    sbStartProcess: TSpeedButton;
+    mLogs: TMemo;
+    layLogs: TLayout;
+    ClearEditButton1: TClearEditButton;
+    ClearEditButton2: TClearEditButton;
+    ClearEditButton3: TClearEditButton;
+    OpenDialog1: TOpenDialog;
+    SaveDialog1: TSaveDialog;
+    ShadowEffect1: TShadowEffect;
+    labAbout: TLabel;
+    procedure rbSourceChange(Sender: TObject);
+    procedure rbFinalNamesChange(Sender: TObject);
+    procedure sbSelectDirClick(Sender: TObject);
     procedure sbSelectFilesClick(Sender: TObject);
     procedure sbSaveFileClick(Sender: TObject);
-    procedure bCreateFileClick(Sender: TObject);
-    procedure FormDestroy(Sender: TObject);
-    procedure cbScanSubFoldersChange(Sender: TObject);
-    procedure Label6Click(Sender: TObject);
+    procedure sbStartProcessClick(Sender: TObject);
+    procedure ClearEditButtonClick(Sender: TObject);
+    procedure labAboutClick(Sender: TObject);
   private
     { Private declarations }
-    FFiles: TStringDynArray;
-    FScanningProcess: Boolean;
-    procedure ScanFolder(PathFolder: string);
-    procedure OnOffbCreateFile;
-    procedure ProcessCreateFile;
-    procedure AddLog(value: string);
+    FFileList: TArray<string>;
+    procedure AddLog(const AValue: string; const AClearLog: Boolean = False);
+    procedure ScanDirectoryProcess(const ADirPath: string; const ASearchInSubDirs: Boolean = False);
+    function SelectedFilesToStr(const AFiles: TArray<string>): string;
+    procedure DataProcessing;
+    procedure ClearFileList;
   public
     { Public declarations }
   end;
@@ -97,294 +101,250 @@ implementation
 
 {$R *.fmx}
 
-procedure TFormMain.AddLog(value: string);
+uses
+  System.IOUtils, FMX.DialogService.Sync, Winapi.ShellAPI;
+
+procedure TFormMain.AddLog(const AValue: string; const AClearLog: Boolean);
+const
+  FormatStr = '%s: %s';
 begin
-  mLogs.Lines.Add(Format('%s: %s', [TimeToStr(Now), value]));
+  if AClearLog then
+  begin
+    mLogs.Lines.Clear;
+    // FIX BUG: https://quality.embarcadero.com/browse/RSP-12137
+    mLogs.ContentBounds := TRectF.Empty;
+  end;
+
+  mLogs.Lines.Add(Format(FormatStr, [TimeToStr(Now), AValue]));
   mLogs.ScrollTo(0, mLogs.ContentBounds.Height);
 end;
 
-procedure TFormMain.bCreateFileClick(Sender: TObject);
+procedure TFormMain.ClearEditButtonClick(Sender: TObject);
 begin
-  bCreateFile.Enabled := False;
-  TThread.CreateAnonymousThread(ProcessCreateFile).Start;
+  ClearFileList;
 end;
 
-procedure TFormMain.cbScanSubFoldersChange(Sender: TObject);
+procedure TFormMain.ClearFileList;
 begin
-  if not ePathFolder.Text.IsEmpty then
-    ScanFolder(ePathFolder.Text);
+  if Length(FFileList) > 0 then
+    SetLength(FFileList, 0);
 end;
 
-procedure TFormMain.ChangeFolderAndFile;
-begin
-  laySelectFolder.Enabled := rbSelectFolder.IsChecked;
-  laySelectFiles.Enabled := not rbSelectFolder.IsChecked;
-
-  if rbSelectFolder.IsChecked then
-    ePathFiles.Text := ''
-  else
-    ePathFolder.Text := '';
-
-  OnOffbCreateFile;
-end;
-
-procedure TFormMain.ChangeTypeName;
-begin
-  layChangeName.Enabled := rbChangeNameAuto.IsChecked;
-end;
-
-procedure TFormMain.ProcessCreateFile;
+procedure TFormMain.DataProcessing;
+const
+  StrAutoName = '%s%d %s "%s"';
+  StrName = '%s %s "%s"';
+  BatFileName = 'CreateResFile.bat';
+  StrForBatFile = 'brcc32.exe %s%spause';
+  InfoProcessStart = 'РќР°С‡Р°Р»Р°СЃСЊ РѕР±СЂР°Р±РѕС‚РєР° РґР°РЅРЅС‹С…...';
+  InfoProcessFinish = 'РћР±СЂР°Р±РѕС‚РєР° РґР°РЅРЅС‹С… Р·Р°РІРµСЂС€РµРЅР°.';
+  ErrorMessage = 'Р’РѕР·РЅРёРєР»Р° РѕС€РёР±РєР°: %s';
 var
+  PathToOutputFile, MaskForNames, TypeResource: string;
+  AutoNames, AddToExistingFile: Boolean;
+  ResultFileList: TArray<string>;
   I, J: Integer;
-  TemplateName: string;
-  FinishArrayFiles: TStringDynArray;
-  SavePath, TypeResource: string;
-  NameAuto, AddToTheOldFile: Boolean;
 begin
+  PathToOutputFile := edPathToOutputFile.Text.Trim;
+  AutoNames := rbAutoNames.IsChecked;
+  MaskForNames := edMaskForNames.Text.Trim;
+  TypeResource := cboxTypeResource.Selected.Text;
+  AddToExistingFile := cbAddToExistingFile.IsChecked;
+
+  AddLog(InfoProcessStart);
   try
-    SavePath := ePathSaveFile.Text.Trim;
-    NameAuto := rbChangeNameAuto.IsChecked;
-    TemplateName := eTemplateName.Text.Trim;
-    TypeResource := combTypeResource.Selected.Text;
-    AddToTheOldFile := cbAddToTheOldFile.IsChecked;
+    SetLength(ResultFileList, Length(FFileList));
 
-    TThread.Synchronize(nil,
-      procedure
-      begin
-        gbSourceFiles.Enabled := False;
-        gbReadyFile.Enabled := False;
-
-        // Анимация
-        layAni.Visible := True;
-        AniIndicator1.Enabled := True;
-
-        laySettings.Enabled := True;
-
-        AddLog('Началась обработка данных...');
-      end);
-
-    // Обрабатываем исходный массив с данными
-    SetLength(FinishArrayFiles, Length(FFiles));
-
-    if NameAuto then
+    if AutoNames then
     begin
-      if TemplateName.IsEmpty then
-        TemplateName := 'file_';
+      if MaskForNames.IsEmpty then
+        MaskForNames := 'file_';
 
-      for I := 0 to Length(FFiles) - 1 do
-        FinishArrayFiles[I] := Format('%s%d %s "%s"', [TemplateName, I+1, TypeResource, FFiles[I]]);
+      for I := Low(FFileList) to High(FFileList) do
+        ResultFileList[I] := Format(StrAutoName, [MaskForNames, I, TypeResource, FFileList[I]]);
     end
     else
-      for I := 0 to Length(FFiles) - 1 do
-        FinishArrayFiles[I] := Format('%s %s "%s"', [TPath.GetFileNameWithoutExtension(FFiles[I]), TypeResource,
-          FFiles[I]]);
+      for I := Low(FFileList) to High(FFileList) do
+        ResultFileList[I] := Format(StrName, [TPath.GetFileNameWithoutExtension(FFileList[I]), TypeResource,
+          FFileList[I]]);
 
-    TArray.Sort<string>(FinishArrayFiles);
-
-    if Length(FinishArrayFiles) > 0 then
-      if AddToTheOldFile AND TFile.Exists(SavePath) then
-        for J := 0 to Length(FinishArrayFiles) - 1 do
-          // Создание нового файла, либо происходит запись в конец существующего файла
-          // Без указания кодировки не работает
-          TFile.AppendAllText(SavePath, FinishArrayFiles[J] + SLineBreak, TEncoding.ANSI)
-      else
-        // Создание нового файла, либо происходит перезапись существующего файла
-        TFile.WriteAllLines(SavePath, FinishArrayFiles, TEncoding.ANSI);
-
-    FinishArrayFiles := nil;
+    if AddToExistingFile then
+      for J := Low(ResultFileList) to High(ResultFileList) do
+        // РЈРєР°Р·Р°РЅРёРµ РєРѕРґРёСЂРѕРІРєРё TEncoding.ANSI РЅСѓР¶РЅРѕ РґР»СЏ brcc32.exe
+        TFile.AppendAllText(PathToOutputFile, ResultFileList[J] + SLineBreak, TEncoding.ANSI)
+    else
+      TFile.WriteAllLines(PathToOutputFile, ResultFileList, TEncoding.ANSI);
 
     if cbCreateBatFile.IsChecked then
-      TFile.WriteAllText(TPath.Combine(TPath.GetDirectoryName(SavePath), 'CreateResFile.bat'),
-        Format('brcc32.exe %s%spause', [TPath.GetFileName(SavePath), SLineBreak]));
+      TFile.WriteAllText(TPath.Combine(TPath.GetDirectoryName(PathToOutputFile), BatFileName),
+        Format(StrForBatFile, [TPath.GetFileName(PathToOutputFile), SLineBreak]));
 
     if cbCreateResFile.IsChecked then
-      ShellExecute(0, 'open', 'cmd.exe', PWideChar('/c brcc32.exe ' + SavePath), nil, 1);
-      //ShellExecute(0, 'open' , PWideChar(TPath.Combine(TPath.GetDirectoryName(ePathSaveFile.Text), 'CreateResFile.bat')), nil, nil, 1);
-  finally
-    TThread.Synchronize(nil,
-      procedure
-      begin
-        AddLog('Обработка данных завершена.');
-        gbSourceFiles.Enabled := True;
-        gbReadyFile.Enabled := True;
+      ShellExecute(0, 'open', 'cmd.exe', PWideChar('/c brcc32.exe ' + PathToOutputFile), nil, 1);
+    // ShellExecute(0, 'open' , PWideChar(TPath.Combine(TPath.GetDirectoryName(PathToOutputFile), BatFileName)), nil, nil, 1);
 
-        // Анимация
-        AniIndicator1.Enabled := False;
-        layAni.Visible := False;
-
-        laySettings.Enabled := True;
-        bCreateFile.Enabled := True;
-      end);
+    AddLog(InfoProcessFinish);
+  except
+    on E: Exception do
+      AddLog(Format(ErrorMessage, [E.Message]));
   end;
 end;
 
-procedure TFormMain.FormCreate(Sender: TObject);
+procedure TFormMain.labAboutClick(Sender: TObject);
+const
+  UrlGitHub = 'https://github.com/AndrewEfimov/GenerateRC';
 begin
-  ChangeFolderAndFile(Self);
-
-  OnOffbCreateFile;
+  ShellExecute(0, 'open', PChar(UrlGitHub), nil, nil, 1);
 end;
 
-procedure TFormMain.FormDestroy(Sender: TObject);
+procedure TFormMain.rbFinalNamesChange(Sender: TObject);
 begin
-  FFiles := nil;
+  layNameMask.Enabled := rbAutoNames.IsChecked;
 end;
 
-procedure TFormMain.Label6Click(Sender: TObject);
+procedure TFormMain.rbSourceChange(Sender: TObject);
 begin
-  ShellExecute(0, 'open', PChar('http://delphifmandroid.blogspot.ru/2014/08/rc-res.html'), nil, nil, 1);
-end;
+  ShadowEffect1.Enabled := False;
+  laySelectDir.Enabled := rbSelectDir.IsChecked;
+  laySelectFiles.Enabled := rbSelectFiles.IsChecked;
 
-procedure TFormMain.OnOffbCreateFile;
-begin
-  if ePathFolder.Text.IsEmpty xor ePathFiles.Text.IsEmpty then
-    bCreateFile.Enabled := not(ePathSaveFile.Text.IsEmpty or FScanningProcess)
-  else
-    bCreateFile.Enabled := False;
+  edDirPath.Text := string.Empty;
+  edFilePaths.Text := string.Empty;
+
+  ClearFileList;
 end;
 
 procedure TFormMain.sbSaveFileClick(Sender: TObject);
+const
+  MessageForDialog = 'РўР°РєРѕР№ С„Р°Р№Р» СЃСѓС‰РµСЃС‚РІСѓРµС‚. Р”РѕР±Р°РІРёС‚СЊ Р·Р°РїРёСЃРё РІ РЅРµРіРѕ?';
 begin
   if SaveDialog1.Execute then
   begin
-    if FileExists(SaveDialog1.FileName) then
+    ShadowEffect1.Enabled := False;
+    if TFile.Exists(SaveDialog1.FileName) then
     begin
-      cbAddToTheOldFile.Enabled := True;
-      cbAddToTheOldFile.IsChecked := TDialogServiceSync.MessageDialog
-        (('Такой файл существует. Добавить записи в него?'), TMsgDlgType.mtConfirmation, mbYesNo, TMsgDlgBtn.mbNo,
-        0) = mrYes;
+      cbAddToExistingFile.Enabled := True;
+      cbAddToExistingFile.IsChecked := TDialogServiceSync.MessageDialog(MessageForDialog, TMsgDlgType.mtConfirmation,
+        mbYesNo, TMsgDlgBtn.mbNo, 0) = mrYes;
     end
     else
-    begin
-      cbAddToTheOldFile.IsChecked := False;
-      cbAddToTheOldFile.Enabled := False;
-    end;
-    ePathSaveFile.Text := SaveDialog1.FileName;
-  end
-  else
-  begin
-    ePathSaveFile.Text := '';
-    cbAddToTheOldFile.IsChecked := False;
-    cbAddToTheOldFile.Enabled := False;
-  end;
+      cbAddToExistingFile.Enabled := False;
 
-  OnOffbCreateFile;
+    edPathToOutputFile.Text := SaveDialog1.FileName;
+  end;
+end;
+
+procedure TFormMain.sbSelectDirClick(Sender: TObject);
+const
+  TitleSelectDirectory = 'Р’С‹Р±РµСЂРёС‚Рµ РїР°РїРєСѓ...';
+  InfoSelectFile = 'Р РµР¶РёРј Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРіРѕ РІС‹Р±РѕСЂР° С„Р°Р№Р»РѕРІ';
+var
+  DirPath: string;
+begin
+  // ExtractFilePath(ParamStr(0));
+  if SelectDirectory(TitleSelectDirectory, '', DirPath) then
+  begin
+    ShadowEffect1.Enabled := False;
+    AddLog(InfoSelectFile, True);
+    edDirPath.Text := DirPath;
+    ScanDirectoryProcess(DirPath, cbScanSubDirs.IsChecked);
+  end;
 end;
 
 procedure TFormMain.sbSelectFilesClick(Sender: TObject);
-var
-  I: Integer;
-  PathFiles: string;
+const
+  InfoSelectFile = 'Р РµР¶РёРј СЂСѓС‡РЅРѕРіРѕ РІС‹Р±РѕСЂР° С„Р°Р№Р»РѕРІ';
+  InfoNumberOfFiles = 'Р¤Р°Р№Р»РѕРІ РІС‹Р±СЂР°РЅРѕ: %d';
 begin
   if OpenDialog1.Execute then
   begin
-    PathFiles := '';
-    ePathFiles.Text := '';
+    ShadowEffect1.Enabled := False;
+    AddLog(InfoSelectFile, True);
 
-    mLogs.Lines.Clear;
-    AddLog('Режим ручного выбора');
+    FFileList := OpenDialog1.Files.ToStringArray;
 
-    FFiles := TStringDynArray(OpenDialog1.Files.ToStringArray);
+    AddLog(Format(InfoNumberOfFiles, [Length(FFileList)]));
 
-    AddLog('Файлов выбрано: ' + Length(FFiles).ToString);
-
-    for I := 0 to OpenDialog1.Files.Count - 1 do
-      if PathFiles.Length > 1 then
-        PathFiles := Format('%s; %s', [PathFiles, ExtractFileName(OpenDialog1.Files[I])])
-      else
-        PathFiles := ExtractFileName(OpenDialog1.Files[I]);
-
-    ePathFiles.Text := PathFiles;
-  end
-  else
-    ePathFiles.Text := '';
-
-  OnOffbCreateFile;
+    edFilePaths.Text := SelectedFilesToStr(FFileList);
+  end;
 end;
 
-procedure TFormMain.sbSelectFolderClick(Sender: TObject);
-var
-  PathFolder: string;
+procedure TFormMain.sbStartProcessClick(Sender: TObject);
+const
+  InfoLengthFileList = 'Р’С‹Р±РµСЂРёС‚Рµ С„Р°Р№Р»С‹';
+  InfoPathToOutputFile = 'РЈРєР°Р¶РёС‚Рµ С„Р°Р№Р» РґР»СЏ СЃРѕС…СЂР°РЅРµРЅРёСЏ';
 begin
-  // ExtractFilePath(ParamStr(0));
-  if SelectDirectory('Выберите папку...', '', PathFolder) then
+  ShadowEffect1.Enabled := False;
+  if not(Length(FFileList) > 0) then
   begin
-    ePathFolder.Text := PathFolder;
-    ScanFolder(PathFolder);
+    if rbSelectDir.IsChecked then
+      ShadowEffect1.Parent := edDirPath
+    else
+      ShadowEffect1.Parent := edFilePaths;
+
+    ShadowEffect1.Enabled := True;
+    AddLog(InfoLengthFileList);
+  end
+  else if edPathToOutputFile.Text.IsEmpty then
+  begin
+    ShadowEffect1.Parent := edPathToOutputFile;
+    ShadowEffect1.Enabled := True;
+    AddLog(InfoPathToOutputFile);
   end
   else
-    ePathFolder.Text := '';
-
-  OnOffbCreateFile;
+    DataProcessing;
 end;
 
-function FilterPredicate(const Path: string; const SearchRec: TSearchRec): Boolean;
-begin
-  Result := (SearchRec.Attr = faArchive);
-end;
-
-procedure TFormMain.ScanFolder(PathFolder: string);
+procedure TFormMain.ScanDirectoryProcess(const ADirPath: string; const ASearchInSubDirs: Boolean);
+const
+  MaskForFileNames = '*';
+  InfoAllDirectories = 'РЎРєР°РЅРёСЂРѕРІР°РЅРёРµ РІРєР»СЋС‡Р°СЏ РїРѕРґРєР°С‚Р°Р»РѕРіРё...';
+  InfoTopDirectoryOnly = 'РЎРєР°РЅРёСЂРѕРІР°РЅРёРµ Р±РµР· РїРѕРґРєР°С‚Р°Р»РѕРіРѕРІ...';
+  InfoNumberOfFiles = 'Р¤Р°Р№Р»РѕРІ РЅР°Р№РґРµРЅРѕ: %d';
+  ErrorMessage = 'Р’РѕР·РЅРёРєР»Р° РѕС€РёР±РєР°: %s';
 var
-  FThread: TThread;
+  SearchOption: TSearchOption;
 begin
+  if ASearchInSubDirs then
+  begin
+    AddLog(InfoAllDirectories);
+    SearchOption := TSearchOption.soAllDirectories;
+  end
+  else
+  begin
+    AddLog(InfoTopDirectoryOnly);
+    SearchOption := TSearchOption.soTopDirectoryOnly;
+  end;
 
-  mLogs.Lines.Clear;
+  try
+    FFileList := TDirectory.GetFiles(ADirPath, MaskForFileNames, SearchOption);
+    AddLog(Format(InfoNumberOfFiles, [Length(FFileList)]));
+  except
+    on E: Exception do
+      AddLog(Format(ErrorMessage, [E.Message]));
+  end;
+end;
 
-  AddLog('Режим автоматического сканирования');
+function TFormMain.SelectedFilesToStr(const AFiles: TArray<string>): string;
+const
+  FormatStr = '%s; %s';
+var
+  SelectedFilesStr, FileName: string;
+  I: Integer;
+begin
+  SelectedFilesStr := '';
 
-  bCreateFile.Enabled := False;
+  for I := Low(AFiles) to High(AFiles) do
+  begin
+    FileName := TPath.GetFileName(AFiles[I]);
 
-  FThread := TThread.CreateAnonymousThread(
-    procedure
-    begin
-      try
-        if cbScanSubFolders.IsChecked then
-        begin
-          FScanningProcess := True;
-          TThread.Synchronize(nil,
-            procedure
-            begin
-              gbSourceFiles.Enabled := False;
+    if not SelectedFilesStr.IsEmpty then
+      SelectedFilesStr := Format(FormatStr, [SelectedFilesStr, FileName])
+    else
+      SelectedFilesStr := FileName;
+  end;
 
-              // Анимация
-              layAni.Visible := True;
-              AniIndicator1.Enabled := True;
-
-              AddLog('Сканирование включая подкаталоги...');
-            end);
-
-          FFiles := TDirectory.GetFiles(PathFolder, TSearchOption.soAllDirectories, FilterPredicate);
-        end
-        else
-        begin
-          TThread.Synchronize(nil,
-            procedure
-            begin
-              AddLog('Сканирование без подкаталогов...');
-            end);
-
-          FFiles := TDirectory.GetFiles(PathFolder, TSearchOption.soTopDirectoryOnly, FilterPredicate);
-        end;
-
-        FScanningProcess := False;
-      finally
-        TThread.Synchronize(nil,
-          procedure
-          begin
-            gbSourceFiles.Enabled := True;
-
-            // Анимация
-            AniIndicator1.Enabled := False;
-            layAni.Visible := False;
-
-            AddLog('Файлов найдено: ' + Length(FFiles).ToString);
-
-            OnOffbCreateFile;
-          end);
-      end;
-    end);
-  FThread.Start;
-
+  Result := SelectedFilesStr;
 end;
 
 end.
